@@ -67,7 +67,7 @@ def safe_measure() -> dict:
     ping_ms = measure_ping()
     try:
         down_mbps, up_mbps = measure_bandwidth()
-    except Exception:
+    except speedtest.SpeedtestException: 
         down_mbps, up_mbps = float("nan"), float("nan")
     return {
         "timestamp": ts,
@@ -75,3 +75,4 @@ def safe_measure() -> dict:
         "download_mbps": down_mbps,
         "upload_mbps": up_mbps,
     }
+
