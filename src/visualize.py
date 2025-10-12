@@ -68,3 +68,45 @@ def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True)
         print("Saved plots:")
         for p in outputs:
             print(f" - {p}")
+
+def analyze_logs(df: pd.DataFrame, by: str = "all"):
+    """
+    df를 분석하여 시간대별, 요일별 평균 속도 등 통계 리포트를 출력합니다.
+    by: 'hourly', 'daily', 'all' 중 선택
+    """
+    if df is None or df.empty:
+        print("No data to analyze.")
+        return
+
+    df = df.copy()
+    if "timestamp" not in df.columns:
+        print("'timestamp' 컬럼이 없습니다.")
+        return
+
+    df["time"] = df["timestamp"].apply(lambda t: dt.datetime.fromtimestamp(int(t)))
+    df["hour"] = df["time"].dt.hour
+    df["day_of_week"] = df["time"].dt.day_name()
+
+    print("\n--- NetSpeed Analysis Report ---")
+
+    # 전체 평균 (항상 표시)
+    print("\n[Overall Average]")
+    print(f"Ping: {df['ping_ms'].mean():.2f} ms")
+    print(f"Download: {df['download_mbps'].mean():.2f} Mbps")
+    print(f"Upload: {df['upload_mbps'].mean():.2f} Mbps")
+
+    if by in ["hourly", "all"]:
+        # 시간대별 평균
+        print("\n[Hourly Average]")
+        hourly_avg = df.groupby("hour")[["ping_ms", "download_mbps", "upload_mbps"]].mean()
+        print(hourly_avg)
+
+    if by in ["daily", "all"]:
+        # 요일별 평균
+        print("\n[Day of Week Average]")
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        daily_avg = df.groupby("day_of_week")[["ping_ms", "download_mbps", "upload_mbps"]].mean().reindex(days)
+        print(daily_avg)
+
+    print("\n--- End of Report ---")
+

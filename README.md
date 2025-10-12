@@ -24,11 +24,25 @@
     그래프 생성
     python -m src.main --plot
 
+    로그 분석
+    전체 분석 (시간대별, 요일별)
+    python -m src.main --analyze
+    
+    시간대별 분석 리포트
+    python -m src.main --analyze hourly
+
+    요일별 분석 리포트
+    python -m src.main --analyze daily
+
+
+
 🛠️ 주요 기능
 
 Ping, Download, Upload 속도 측정
 
 CSV 파일에 누적 기록
 
-시간대별 그래프 시각화
+시간대별 속도 변화 그래프 시각화
+
+시간대별/요일별 평균 속도 분석 리포트 제공
 
