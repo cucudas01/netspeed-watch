@@ -95,6 +95,17 @@ def analyze_logs(df: pd.DataFrame, by: str = "all"):
     print(f"Download: {df['download_mbps'].mean():.2f} Mbps")
     print(f"Upload: {df['upload_mbps'].mean():.2f} Mbps")
 
+    # === [추가된 부분] 인터넷 상품별 속도 기준표 ===
+    print("\n[참고: 일반적인 인터넷 상품별 속도 기준 (대칭형 기준)]")
+    print("---------------------------------------------------------")
+    print("| 상품명       | 다운로드/업로드 (Mbps) | 핑 (ms)      |")
+    print("---------------------------------------------------------")
+    print("| 100M 광랜    | 80 - 100             | 1 - 10       |")
+    print("| 500M 기가라이트| 400 - 500           | 1 - 5        |")
+    print("| 1G 기가      | 850 - 950            | 1 - 5        |")
+    print("---------------------------------------------------------")
+    # === [여기까지] ===
+
     if by in ["hourly", "all"]:
         # 시간대별 평균
         print("\n[Hourly Average]")
@@ -109,4 +120,3 @@ def analyze_logs(df: pd.DataFrame, by: str = "all"):
         print(daily_avg)
 
     print("\n--- End of Report ---")
-
