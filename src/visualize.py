@@ -1,6 +1,7 @@
 # src/visualize.py
 from __future__ import annotations
 import os
+import sys
 from pathlib import Path
 import datetime as dt
 
@@ -28,15 +29,22 @@ def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True)
         return
 
     df = df.copy()
-    print('DataFrame columns:', df.columns)
+    
     if "timestamp" not in df.columns:
         print("'timestamp' 컬럼이 없습니다. 실제 컬럼명을 확인하세요.")
         return
+        
     df["time"] = df["timestamp"].apply(lambda t: dt.datetime.fromtimestamp(int(t)))
     df = df.sort_values("time")
 
+    # .exe로 실행 시 data 폴더 경로를 ROOT 기준으로 찾음
     if save_dir is None:
-        save_dir = Path(__file__).resolve().parent.parent / "data" / "plots"
+        if getattr(sys, 'frozen', False):
+            ROOT = Path(sys.executable).parent
+        else:
+            ROOT = Path.cwd()
+        save_dir = ROOT / "data" / "plots"
+        
     _ensure_dir(save_dir)
 
     metrics = [
@@ -54,6 +62,7 @@ def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True)
         plt.title(title)
         plt.xlabel("Time")
         plt.ylabel(title)
+        plt.grid(True)
         plt.tight_layout()
 
         out = save_dir / f"{col}.png"
@@ -91,11 +100,12 @@ def analyze_logs(df: pd.DataFrame, by: str = "all"):
 
     # 전체 평균 (항상 표시)
     print("\n[Overall Average]")
+    print(f"Total Measurements: {len(df)}")
     print(f"Ping: {df['ping_ms'].mean():.2f} ms")
     print(f"Download: {df['download_mbps'].mean():.2f} Mbps")
     print(f"Upload: {df['upload_mbps'].mean():.2f} Mbps")
 
-    # === [추가된 부분] 인터넷 상품별 속도 기준표 ===
+    # === [4차 발표 내용] 인터넷 상품별 속도 기준표 ===
     print("\n[참고: 일반적인 인터넷 상품별 속도 기준 (대칭형 기준)]")
     print("---------------------------------------------------------")
     print("| 상품명       | 다운로드/업로드 (Mbps) | 핑 (ms)      |")
@@ -110,13 +120,13 @@ def analyze_logs(df: pd.DataFrame, by: str = "all"):
         # 시간대별 평균
         print("\n[Hourly Average]")
         hourly_avg = df.groupby("hour")[["ping_ms", "download_mbps", "upload_mbps"]].mean()
-        print(hourly_avg)
+        print(hourly_avg.to_string()) # .to_string() for better alignment
 
     if by in ["daily", "all"]:
         # 요일별 평균
         print("\n[Day of Week Average]")
         days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         daily_avg = df.groupby("day_of_week")[["ping_ms", "download_mbps", "upload_mbps"]].mean().reindex(days)
-        print(daily_avg)
+        print(daily_avg.to_string())
 
     print("\n--- End of Report ---")

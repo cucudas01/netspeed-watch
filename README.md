@@ -17,7 +17,11 @@
     python -m pip install -r requirements.txt
     ```
 
-## 실행 방법
+## GUI 설치 방법
+    pyinstaller --onefile --windowed --add-data "src;src" main_gui.py
+
+    
+## CLI 실행 방법 
 
 -   **1회 측정**
     ```bash
