@@ -11,7 +11,8 @@ import speedtest
 
 def measure_ping(host: str = "8.8.8.8", count: int = 1, timeout_s: int = 2) -> float:
     """
-    (기존과 동일 - 수정 없음)
+    (기존과 동일)
+    평균 지연(ms) 반환. OS 기본 ping 유틸을 호출해 결과를 파싱한다.
     """
     system = platform.system().lower()
     if system == "windows":
@@ -46,25 +47,31 @@ def measure_ping(host: str = "8.8.8.8", count: int = 1, timeout_s: int = 2) -> f
     return float("nan")
 
 
-def measure_bandwidth() -> Tuple[float, float]:
+def measure_bandwidth() -> Tuple[float, float, str]:
     """
-    (기존과 동일 - 수정 없음)
+    [수정됨] Speedtest.net 기반 다운/업로드(Mbps) 및 'IP 주소' 측정.
     """
     s = speedtest.Speedtest()
     s.get_best_server()
     down_bps = s.download()
     up_bps = s.upload()
-    return (down_bps / 1_000_000, up_bps / 1_000_000)
+    
+    # [추가] 결과에서 클라이언트 IP 주소 가져오기
+    ip_address = s.results.client['ip']
+    
+    return (down_bps / 1_000_000, up_bps / 1_000_000, ip_address)
 
 
-def safe_measure(host: str = "8.8.8.8") -> dict: # <-- host 인자 추가
+def safe_measure(host: str = "8.8.8.8") -> dict:
     """
-    단일 측정 묶음(핑 + 대역폭). 대역폭 실패 시 NaN 기록.
+    [수정됨] 단일 측정 묶음(핑 + 대역폭 + IP).
     """
     ts = int(time.time())
-    ping_ms = measure_ping(host=host) # <-- host 인자 전달
+    ping_ms = measure_ping(host=host)
+    ip_address = "N/A" # [추가] IP 기본값
     try:
-        down_mbps, up_mbps = measure_bandwidth()
+        # [수정] 3개의 반환값(down, up, ip)을 받음
+        down_mbps, up_mbps, ip_address = measure_bandwidth()
     except speedtest.SpeedtestException: 
         down_mbps, up_mbps = float("nan"), float("nan")
     except Exception:
@@ -75,4 +82,5 @@ def safe_measure(host: str = "8.8.8.8") -> dict: # <-- host 인자 추가
         "ping_ms": ping_ms,
         "download_mbps": down_mbps,
         "upload_mbps": up_mbps,
+        "ip_address": ip_address # [추가] IP 주소 필드
     }

@@ -1,11 +1,11 @@
-# src/visualize.py
+# netspeed-watch_cli/src/visualize.py
 from __future__ import annotations
 import os
 import sys
 from pathlib import Path
 import datetime as dt
+import re 
 
-# GUI 없는 서버에서도 저장 가능하도록 Agg 백엔드 사용
 import matplotlib
 if os.environ.get("DISPLAY", "") == "":
     matplotlib.use("Agg")
@@ -18,11 +18,9 @@ def _ensure_dir(p: Path):
     p.mkdir(parents=True, exist_ok=True)
 
 
-def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True):
+def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True, host: str | None = None):
     """
-    df를 시간축 기준으로 정렬하여 ping/download/upload 각각 라인 차트 생성.
-    - save_dir 지정 시 PNG 저장 (기본: data/plots/)
-    - show=True이고 GUI가 있으면 plt.show()도 호출
+    (기존과 동일 - 'host' 기반 저장)
     """
     if df is None or df.empty:
         print("No data to plot.")
@@ -37,13 +35,16 @@ def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True)
     df["time"] = df["timestamp"].apply(lambda t: dt.datetime.fromtimestamp(int(t)))
     df = df.sort_values("time")
 
-    # .exe로 실행 시 data 폴더 경로를 ROOT 기준으로 찾음
     if save_dir is None:
         if getattr(sys, 'frozen', False):
             ROOT = Path(sys.executable).parent
         else:
             ROOT = Path.cwd()
         save_dir = ROOT / "data" / "plots"
+
+    if host:
+        safe_host_dir = re.sub(r'[^\w\.-]', '_', host)
+        save_dir = save_dir / safe_host_dir
         
     _ensure_dir(save_dir)
 
@@ -74,38 +75,67 @@ def plot_logs(df: pd.DataFrame, save_dir: Path | None = None, show: bool = True)
         plt.close()
 
     if outputs:
-        print("Saved plots:")
+        print(f"Saved plots to: {save_dir.resolve()}")
         for p in outputs:
-            print(f" - {p}")
+            print(f" - {p.name}")
 
-def analyze_logs(df: pd.DataFrame, by: str = "all"):
+def analyze_logs(df: pd.DataFrame, by: str = "all", ip: str | None = None):
     """
-    df를 분석하여 시간대별, 요일별 평균 속도 등 통계 리포트를 출력합니다.
-    by: 'hourly', 'daily', 'all' 중 선택
+    [수정됨] df를 분석, 'ip'가 제공되면 해당 IP로 필터링 후 리포트 출력
     """
     if df is None or df.empty:
         print("No data to analyze.")
         return
 
     df = df.copy()
+    
+    # --- [추가] IP 필터링 로직 ---
+    if "ip_address" not in df.columns:
+        print("\n[알림] 'ip_address' 컬럼이 로그에 없습니다. (이전 버전 로그)")
+        if ip:
+            print(f"[오류] 'ip_address' 컬럼이 없어 {ip}로 필터링할 수 없습니다.")
+            return
+    else:
+        # IP가 명시된 경우, 필터링 수행
+        if ip:
+            available_ips = df['ip_address'].unique()
+            if ip not in available_ips:
+                print(f"\n[오류] IP {ip}를 로그에서 찾을 수 없습니다.")
+                print(f"사용 가능한 IP: {available_ips}")
+                return
+            
+            print(f"\n--- [필터 적용됨] IP: {ip} ---")
+            df = df[df['ip_address'] == ip] # IP로 필터링
+        else:
+            # IP가 명시되진 않았지만, 컬럼이 존재할 경우, 사용 가능한 IP 목록 표시
+            available_ips = df['ip_address'].dropna().unique()
+            if len(available_ips) > 1:
+                print(f"\n[알림] 이 로그에는 여러 IP가 있습니다: {available_ips}")
+                print("   (특정 IP만 보려면 --ip 옵션을 사용하세요)")
+    # --- [여기까지 추가] ---
+
+
+    if df is None or df.empty:
+        print("필터링 결과 데이터가 없습니다.")
+        return
+
     if "timestamp" not in df.columns:
         print("'timestamp' 컬럼이 없습니다.")
         return
-
+    
+    # (이하 기존 분석 로직)
     df["time"] = df["timestamp"].apply(lambda t: dt.datetime.fromtimestamp(int(t)))
     df["hour"] = df["time"].dt.hour
     df["day_of_week"] = df["time"].dt.day_name()
 
     print("\n--- NetSpeed Analysis Report ---")
 
-    # 전체 평균 (항상 표시)
     print("\n[Overall Average]")
     print(f"Total Measurements: {len(df)}")
     print(f"Ping: {df['ping_ms'].mean():.2f} ms")
     print(f"Download: {df['download_mbps'].mean():.2f} Mbps")
     print(f"Upload: {df['upload_mbps'].mean():.2f} Mbps")
 
-    # === [4차 발표 내용] 인터넷 상품별 속도 기준표 ===
     print("\n[참고: 일반적인 인터넷 상품별 속도 기준 (대칭형 기준)]")
     print("---------------------------------------------------------")
     print("| 상품명       | 다운로드/업로드 (Mbps) | 핑 (ms)      |")
@@ -114,16 +144,13 @@ def analyze_logs(df: pd.DataFrame, by: str = "all"):
     print("| 500M 기가라이트| 400 - 500           | 1 - 5        |")
     print("| 1G 기가      | 850 - 950            | 1 - 5        |")
     print("---------------------------------------------------------")
-    # === [여기까지] ===
 
     if by in ["hourly", "all"]:
-        # 시간대별 평균
         print("\n[Hourly Average]")
         hourly_avg = df.groupby("hour")[["ping_ms", "download_mbps", "upload_mbps"]].mean()
-        print(hourly_avg.to_string()) # .to_string() for better alignment
+        print(hourly_avg.to_string()) 
 
     if by in ["daily", "all"]:
-        # 요일별 평균
         print("\n[Day of Week Average]")
         days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         daily_avg = df.groupby("day_of_week")[["ping_ms", "download_mbps", "upload_mbps"]].mean().reindex(days)
