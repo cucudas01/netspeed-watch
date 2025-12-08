@@ -1,63 +1,62 @@
-# NetSpeed Watch
+# 🚀 NetSpeed Watch (Final Ver.)
 
-네트워크 속도를 주기적으로 측정하고 CSV로 기록하며,
-시간대별 품질 변화를 그래프로 시각화하는 Python 기반 유틸리티입니다.
+**NetSpeed Watch**는 사용자의 인터넷 속도(Ping, Download, Upload)를 실시간으로 측정하고, 데이터를 축적하여 네트워크 품질 변화를 모니터링하는 데스크톱 애플리케이션입니다.
 
----
-
-## 📦 설치 방법
-
-1.  가상환경 생성 및 활성화 (선택)
-    ```bash
-    python -m venv .venv
-    .\.venv\Scripts\activate
-    ```
-2.  필수 패키지 설치
-    ```bash
-    python -m pip install -r requirements.txt
-    ```
-
-## GUI 설치 방법
-    pyinstaller --onefile --windowed --add-data "src;src" main_gui.py
-
-    
-## CLI 실행 방법 
-
--   **1회 측정**
-    ```bash
-    python -m src.main --once
-    ```
--   **주기적 측정**
-    ```bash
-    python -m src.main --loop 300
-    ```
--   **주기적 측정 (횟수 지정)**
-    ```bash
-    python -m src.main --loop 300 --count 10
-    ```
--   **그래프 생성**
-    ```bash
-    python -m src.main --plot
-    ```
--   **로그 분석**
-    -   전체 분석 (시간대별, 요일별)
-        ```bash
-        python -m src.main --analyze
-        ```
-    -   시간대별 분석 리포트
-        ```bash
-        python -m src.main --analyze hourly
-        ```
-    -   요일별 분석 리포트
-        ```bash
-        python -m src.main --analyze daily
-        ```
+**시스템 트레이(System Tray)** 기능을 지원하여 창을 닫아도 백그라운드에서 24시간 끊김 없이 네트워크 상태를 감시할 수 있습니다.
 
 ---
 
-## 🛠️ 주요 기능
+## ✨ 주요 기능 (Key Features)
 
--   Ping, Download, Upload 속도 측정
--   CSV 파일에 누적 기록
--   시간대별 속도 변화 그래프 시각화
--   시간대별/요일별 평균 속도 분석 리포트 제공
+* **🖥️ 백그라운드 실행 (System Tray)**
+    * 프로그램 창을 닫아도(X) 종료되지 않고 **시스템 트레이**로 숨어들어 측정을 계속합니다.
+    * 작업 방해 없이 상시 모니터링이 가능합니다.
+* **🚀 정밀 속도 측정**
+    * `speedtest-cli`를 기반으로 핑, 다운로드, 업로드 속도를 측정합니다.
+    * 측정 당시의 **공용 IP 주소**를 함께 기록하여 장소를 구별합니다.
+* **🔄 주기적 자동 측정**
+    * 사용자가 설정한 간격(초)마다 자동으로 속도를 측정하고 로그를 저장합니다.
+* **📊 데이터 분석 및 시각화**
+    * **그래프**: 축적된 데이터를 시계열 그래프로 보여줍니다.
+    * **IP 필터링**: 집, 카페 등 특정 장소(IP)의 데이터만 골라서 분석할 수 있습니다.
+* **🗑️ 데이터 관리**
+    * GUI 내에서 불필요하거나 잘못 측정된 로그 파일을 즉시 삭제할 수 있습니다.
+* **📦 단일 실행 파일 (.exe)**
+    * Python 설치 없이도 어디서든 바로 실행 가능한 포터블(Portable) 방식을 지원합니다.
+
+---
+
+## 🛠️ 실행 방법 (사용자용)
+
+### 1. 실행 파일 사용 (추천)
+별도의 설치 과정이 없습니다. 배포된 **`NetSpeedWatch.exe`** 파일을 더블 클릭하면 즉시 실행됩니다.
+
+### 2. 사용 가이드
+1.  **측정 설정**: '측정 간격'을 입력하고 **[자동 측정 시작]**을 누릅니다.
+2.  **백그라운드 전환**: 창 닫기(X) 버튼을 누르면 트레이 아이콘으로 최소화됩니다.
+3.  **복구 및 종료**:
+    * **복구**: 트레이 아이콘 우클릭 -> **[열기(Open)]**
+    * **종료**: 트레이 아이콘 우클릭 -> **[종료(Exit)]**
+
+---
+
+## 💻 개발 환경 설정 (개발자용)
+
+소스 코드를 직접 실행하거나 수정하려면 다음 과정이 필요합니다.
+
+### 1. 필수 라이브러리 설치
+Python 3.x 환경에서 아래 명령어로 의존성 패키지를 설치합니다.
+
+```bash
+pip install -r requirements.txt
+
+
+### 소스 코드로 실행
+python main_gui.py
+
+### 실행 파일 빌드 (Build .exe)
+# PyInstaller 설치 (없을 경우)
+pip install pyinstaller
+
+# 빌드 실행
+pyinstaller --onefile --windowed --add-data "src;src" main_gui.py
